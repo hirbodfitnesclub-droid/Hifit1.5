@@ -97,7 +97,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({ exercise, index, con
                       
                       <button 
                         onClick={() => setExpanded(!expanded)}
-                        className="mr-auto w-8 h-8 rounded-full bg-zinc-800/50 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors"
+                        className="ms-auto w-8 h-8 rounded-full bg-zinc-800/50 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors"
                       >
                           <Info className="w-4 h-4" />
                       </button>

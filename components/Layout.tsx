@@ -31,7 +31,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeV
       <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-zinc-900 via-black to-black z-0 pointer-events-none" />
       
       {/* Main Content - Removed padding top since header is gone */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden relative pb-32 z-10 scrollbar-hide">
+      <main className={`flex-1 ${currentView === AppView.CHAT ? 'h-full overflow-hidden' : 'overflow-y-auto overflow-x-hidden pb-32'} relative z-10 scrollbar-hide`}>
         {children}
       </main>
 

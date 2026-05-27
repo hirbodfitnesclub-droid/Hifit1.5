@@ -9,10 +9,12 @@ const MODEL_ID = 'gemini-3.5-flash';
 // --- SHARED PROMPTS ---
 const BASE_SYSTEM_INSTRUCTION = `
 You are **Hifit**, an elite AI Strength & Conditioning Coach for Gen Z Iranians.
-**Persona:** Energetic, Bro-Coach, Scientific, Persian Slang ("رفیق", "بترکون").
-**Language:** Fluent Modern Persian (Farsi).
+**Persona:** Energetic, Bro-Coach, Scientific, Persian Slang ("رفیق", "بترکون", "ستون", "داش").
+**Language:** Fluent Modern Persian (Farsi). EVERYTHING you output MUST be in Persian (Farsi).
 **Philosophy:** Data-driven logic.
-**CRITICAL RULE:** When asked for JSON, output ONLY valid JSON. Do not include markdown formatting like \`\`\`json.
+**CRITICAL RULES:**
+1. You MUST generate ALL texts, exercise names, nutrition tips, muscle groups, food names, meals titles, nutrition/dietary ingredients, and conversational chat replies entirely in Persian (Farsi). Do not use English words or names for exercises (e.g. use "پرس سینه" instead of "Bench Press", use "اسکوات" instead of "Squat", use "فیله کمر" instead of "Hyperextension", or "ساعد دمبل" instead of "Dumbbell Wrist Curls").
+2. When asked for JSON, output ONLY valid JSON. Do not include markdown formatting like \`\`\`json.
 `;
 
 // --- SCHEMAS ---
@@ -275,6 +277,7 @@ async function _generateWorkoutPhase(userStats: UserStats, userName: string): Pr
       2. If a day is NOT in Available Days, set "isRestDay": true and empty exercises.
       3. Target Calories: Based on goal (${userStats.goal}).
       4. Output strictly valid JSON matching the schema.
+      5. CRITICAL: All keys and JSON structures must match the schema, but ALL values (focus, nutritionTip, exercises.name, exercises.muscleGroup, exercises.reps) MUST BE IN PERSIAN (Farsi) ONLY. No English words or English characters. Always translate standard exercise names to their standard Persian equivalents (e.g. use "پرس سینه" instead of "Bench Press", use "اسکوات" instead of "Squat").
     `;
 
     try {
@@ -321,6 +324,7 @@ async function _generateNutritionAtomic(userStats: UserStats, workoutPlan: any):
           - 3 Main Meals + 1 Snack.
           - Persian Cuisine compatible.
           - STRICT JSON output. No text.
+          - CRITICAL: ALL values (meals.title, ingredients, meals.timeSuggestions) MUST BE ENTIRELY IN PERSIAN (Farsi). Do not use English words under any circumstance. Translate any Western dishes to common Persian terms or phonetic Persian spelling (e.g., "اوتمیل" instead of "Oatmeal", "سینه مرغ گریل شده" instead of "Grilled Chicken Breast").
         `;
 
         try {
@@ -408,6 +412,7 @@ export const adjustDailyWorkout = async (
         - If Score > 80: Increase Intensity.
         
         Output valid JSON matching schema.
+        CRITICAL: ALL values (focus, nutritionTip, exercises.name, exercises.muscleGroup, exercises.reps) MUST BE ENTIRELY IN PERSIAN (Farsi). Do not use English words.
     `;
 
     try {

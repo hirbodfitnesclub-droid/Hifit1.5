@@ -76,7 +76,7 @@ export const WorkoutHero: React.FC<WorkoutHeroProps> = ({ plan }) => {
                     <p className="text-[10px] text-zinc-300 font-medium truncate">
                         {plan.nutritionTip}
                     </p>
-                    <ChevronLeft className="w-3 h-3 text-zinc-600 mr-auto" />
+                    <ChevronLeft className="w-3 h-3 text-zinc-600 ms-auto" />
                 </div>
             )}
         </div>
