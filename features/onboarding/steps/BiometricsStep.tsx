@@ -15,7 +15,7 @@ export const BiometricsStep: React.FC<BiometricsStepProps> = ({ onNext }) => {
 
   return (
     <>
-      <span className="text-gold-500 font-bold text-sm tracking-widest uppercase mb-2 block">مرحله ۲/۶</span>
+      <span className="text-gold-500 font-bold text-sm tracking-widest uppercase mb-2 block">مرحله ۲/۹</span>
       <h2 className="text-4xl font-black mb-8 leading-tight">اطلاعات فیزیکی</h2>
 
       <div className="space-y-6">

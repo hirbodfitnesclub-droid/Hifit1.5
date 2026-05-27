@@ -31,7 +31,7 @@ export const AvailabilityStep: React.FC<AvailabilityStepProps> = ({ onNext }) =>
 
   return (
     <>
-      <span className="text-gold-500 font-bold text-sm tracking-widest uppercase mb-2 block">مرحله ۴/۶</span>
+      <span className="text-gold-500 font-bold text-sm tracking-widest uppercase mb-2 block">مرحله ۵/۹</span>
       <h2 className="text-4xl font-black mb-4 leading-tight">برنامه هفتگی</h2>
       <p className="text-zinc-400 mb-8 text-sm leading-relaxed">
           کدام روزها فرصت تمرین دارید؟ <br/>

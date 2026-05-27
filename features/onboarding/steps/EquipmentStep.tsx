@@ -29,7 +29,7 @@ export const EquipmentStep: React.FC<EquipmentStepProps> = ({ onNext }) => {
 
   return (
     <>
-      <span className="text-gold-500 font-bold text-sm tracking-widest uppercase mb-2 block">مرحله ۵/۶</span>
+      <span className="text-gold-500 font-bold text-sm tracking-widest uppercase mb-2 block">مرحله ۸/۹</span>
       <h2 className="text-4xl font-black mb-8 leading-tight">محل تمرین</h2>
 
       <div className="space-y-6">

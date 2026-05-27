@@ -40,8 +40,8 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Global State
-  const [user, setUserState] = useState<User | null>(null);
-  const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlan | null>(null);
+  const [user, setUserState] = useState<User | null>(() => safelyParseJSON<User>('hifit_user', null));
+  const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlan | null>(() => safelyParseJSON<WeeklyPlan>('hifit_plan', null));
   const [messages, setMessages] = useState<Message[]>([]);
   
   // UI State
@@ -62,13 +62,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // --- PERSISTENCE & INIT ---
   useEffect(() => {
-    // Safe load
+    // Sync if storage changed, fallback logs clean
     const savedUser = safelyParseJSON<User>('hifit_user', null);
     const savedPlan = safelyParseJSON<WeeklyPlan>('hifit_plan', null);
     
-    if (savedUser) setUserState(savedUser);
-    if (savedPlan) setWeeklyPlan(savedPlan);
-  }, []);
+    if (savedUser && !user) setUserState(savedUser);
+    if (savedPlan && !weeklyPlan) setWeeklyPlan(savedPlan);
+  }, [user, weeklyPlan]);
 
   const setUser = (u: User) => {
     setUserState(u);

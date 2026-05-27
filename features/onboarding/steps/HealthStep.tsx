@@ -17,7 +17,7 @@ export const HealthStep: React.FC<HealthStepProps> = ({ onNext }) => {
 
   return (
     <>
-      <span className="text-gold-500 font-bold text-sm tracking-widest uppercase mb-2 block">مرحله ۶/۶</span>
+      <span className="text-gold-500 font-bold text-sm tracking-widest uppercase mb-2 block">مرحله ۹/۹</span>
       <h2 className="text-4xl font-black mb-4 leading-tight">سلامت جسمانی</h2>
       <p className="text-zinc-400 mb-8 text-sm">
           آیا آسیب دیدگی خاصی (کمر درد، زانو درد، دیسک...) دارید که باید در برنامه لحاظ شود؟

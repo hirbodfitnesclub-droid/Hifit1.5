@@ -1,8 +1,11 @@
 {
-  "name": "Remix:  Hifit 1.4",
+  "name": "Hifit 1.5",
   "description": "A luxury, RTL-native AI personal trainer application powered by Gemini.",
   "requestFramePermissions": [
     "camera",
     "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }

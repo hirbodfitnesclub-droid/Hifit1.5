@@ -14,7 +14,7 @@ export const NameStep: React.FC<NameStepProps> = ({ onNext }) => {
 
   return (
     <>
-      <span className="text-gold-500 font-bold text-sm tracking-widest uppercase mb-2 block">مرحله ۱/۶</span>
+      <span className="text-gold-500 font-bold text-sm tracking-widest uppercase mb-2 block">مرحله ۱/۹</span>
       <h2 className="text-5xl font-black mb-12 leading-tight">اسم شما چیه؟</h2>
 
       <div className="space-y-8">

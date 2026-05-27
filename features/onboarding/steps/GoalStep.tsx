@@ -21,7 +21,7 @@ export const GoalStep: React.FC<GoalStepProps> = ({ onNext }) => {
 
   return (
     <>
-      <span className="text-gold-500 font-bold text-sm tracking-widest uppercase mb-2 block">مرحله ۳/۶</span>
+      <span className="text-gold-500 font-bold text-sm tracking-widest uppercase mb-2 block">مرحله ۴/۹</span>
       <h2 className="text-4xl font-black mb-6 leading-tight">هدف و تجربه</h2>
 
       <div className="space-y-6">
