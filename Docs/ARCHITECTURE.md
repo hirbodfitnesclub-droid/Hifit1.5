@@ -74,6 +74,8 @@
 - **C1** `services/geminiService.ts`
   - `BASE_SYSTEM_INSTRUCTION` کاملاً بازنویسی: persona جدید (Elite International S&C Coach)، حذف Slang فارسی، الزام صریح به خروجی انگلیسی طبیعی و حرفه‌ای.
   - تمام نمونه‌های in-prompt که می‌گفتند "Persian/Farsi" یا exercise mappings فارسی ⇒ حذف و جایگزینی با معادل انگلیسی استاندارد.
+  - **[حیاتی]** در `_generateWorkoutPhase` متن `"1. Create a 7-day plan (Saturday to Friday)."` ⇒ `"1. Create a 7-day plan (Monday to Sunday)."` تا با ترتیب Mon-first در sanitizer و UI هماهنگ باشد. اگر این تغییر داده نشود، AI روزها را Sat-first تولید می‌کند ولی UI آن‌ها را Mon-first رندر می‌کند ⇒ شیفت کامل برنامه.
+  - کامنت داخلی sanitizer (`// Adjust to make Saturday index 0`) ⇒ `// Adjust to make Monday index 0`.
   - تمام Fallback ها (`getFallbackMeals`, sanitizer defaults: `'استراحت و ریکاوری'`, `'تمرین عمومی'`, `'آب کافی بنوشید.'`, `'حرکت نامشخص'`, `'مواد سالم'`, `'وعده سالم'`) ⇒ معادل انگلیسی.
   - error string `"خطای ارتباط با سرور."` و `"متوجه نشدم."` در `generateAgentResponse` ⇒ انگلیسی.
   - `dayName: today.toLocaleDateString('fa-IR', { weekday: 'long' })` ⇒ `'en-US'`.
@@ -81,7 +83,7 @@
 ### D. Global State
 - **D1** `context/UserContext.tsx`
   - `getTodayIndex()`: محاسبه‌ی Saturday-first → **Monday-first** (ISO standard). فرمول جدید: `(d.getDay() + 6) % 7` (Mon=0).
-  - `getTodayLog()`: `toLocaleDateString('fa-IR')` ⇒ یک key پایدار locale-agnostic مثل `d.toISOString().slice(0,10)` (YYYY-MM-DD). این تغییر سازگاری با logهای قبلی را می‌شکند، که در فاز Pivot قابل قبول است (اپ هنوز launch نشده).
+  - `getTodayLog()` و `submitDailyLog()`: کلید تاریخ از `toLocaleDateString('fa-IR')` ⇒ **`toLocaleDateString('en-CA')`** (خروجی `YYYY-MM-DD` در **منطقه زمانی محلی کاربر**). مهم: از `toISOString().slice(0,10)` استفاده **نشود** چون UTC است و در ساعات بامداد کاربر، log روز اشتباه ثبت می‌شود (timezone bug). این تغییر سازگاری با logهای قبلی را می‌شکند، که در فاز pre-launch قابل قبول است.
 
 ### E. UI Layer (LTR + English)
 هر کامپوننت زیر باید: (۱) رشته‌های فارسی hardcoded را به انگلیسی برگرداند، (۲) کلاس‌های `space-x-reverse`, `flex-row-reverse` (در صورت وجود) را با LTR طبیعی جایگزین کند، (۳) margin/padding های جهت‌دار (`mr-`, `ml-`, `pr-`, `pl-`) را از منظر **LTR** بازنگری کند (آنچه در RTL "شروع" بود، اکنون باید ml/pl باشد یا برعکس)، (۴) جایی که `text-right` صرفاً برای زبان RTL بود، حذف یا `text-left` شود.

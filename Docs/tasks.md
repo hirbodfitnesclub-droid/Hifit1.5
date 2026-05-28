@@ -3,6 +3,8 @@
 > این تسک‌ها **متوالی** اجرا می‌شوند. تسک‌هایی که روی فایل‌های مشترک می‌نویسند هرگز موازی نمی‌شوند. کدنویس هر تسک را تا تأیید Validation تمام می‌کند، سپس به تسک بعدی می‌رود.
 >
 > **قانون طلایی برای هر تسک:** پس از اعمال تغییر، در فایل‌های لمس‌شده هیچ کاراکتر `[\u0600-\u06FF]` (فارسی/عربی) باقی نماند؛ مگر اینکه تسک صراحتاً اجازه داده باشد.
+>
+> **ترتیب اجرا:** 01 → 02 → 03 → 04 → **05A → 05B** → 06 → 07 → 08 → **09A → 09B** → 10 → 11.
 
 ---
 
@@ -69,12 +71,14 @@
    3) When asked for JSON, output ONLY valid JSON—no markdown fences, no commentary.
    ```
 2. در سه prompt محلی (`_generateWorkoutPhase`, `_generateNutritionAtomic`, `adjustDailyWorkout`, `generateAgentResponse`): هر دستور "MUST BE IN PERSIAN" را به "MUST BE IN ENGLISH" برگردان و مثال‌های فارسی (مثل `"پرس سینه"`) را با معادل انگلیسی استاندارد جایگزین کن. به‌خصوص در `_generateNutritionAtomic` راهنمایی "Persian Cuisine compatible" را به **"Internationally familiar, balanced cuisine (lean proteins, whole grains, vegetables, healthy fats)"** تغییر بده.
-3. در `sanitizeGeneratedPlan`:
+3. **[بحرانی — هم‌راستاسازی هفته با Mon-first]** در `_generateWorkoutPhase`، خط `"1. Create a 7-day plan (Saturday to Friday)."` را به `"1. Create a 7-day plan (Monday to Sunday)."` تغییر بده. اگر فقط sanitizer Mon-first شود ولی این prompt همچنان Sat-first بخواهد، AI روزها را با ترتیب اشتباه تولید می‌کند و UI کاربر روز اشتباه تمرین می‌بیند.
+4. در `sanitizeGeneratedPlan`:
    - `dayName: today.toLocaleDateString('fa-IR', { weekday: 'long' })` ⇒ `toLocaleDateString('en-US', { weekday: 'long' })`.
    - تغییر شروع هفته از Saturday-first به **Monday-first**: فرمول `const diff = (dayOfWeek + 6) % 7;` (Mon=0).
+   - کامنت `// Adjust to make Saturday index 0` ⇒ `// Adjust to make Monday index 0`.
    - Fallbackها: `'استراحت و ریکاوری'` ⇒ `'Rest & Recovery'`، `'تمرین عمومی'` ⇒ `'General Training'`، `'آب کافی بنوشید.'` ⇒ `'Stay well hydrated.'`، `'حرکت نامشخص'` ⇒ `'Unnamed Exercise'`، `'مواد سالم'` ⇒ `'Healthy ingredients'`، `'وعده سالم'` ⇒ `'Healthy meal'`.
-4. در `getFallbackMeals`: تمام titleها و ingredients به انگلیسی (مثلاً `'Protein Breakfast (Default)'`, `['Eggs', 'Whole-grain toast', 'Tea']`).
-5. در `generateAgentResponse`: `"خطای ارتباط با سرور."` ⇒ `"Connection error. Please try again."`، `"متوجه نشدم."` ⇒ `"Sorry, I didn't catch that."`.
+5. در `getFallbackMeals`: تمام titleها و ingredients به انگلیسی (مثلاً `'Protein Breakfast (Default)'`, `['Eggs', 'Whole-grain toast', 'Tea']`).
+6. در `generateAgentResponse`: `"خطای ارتباط با سرور."` ⇒ `"Connection error. Please try again."`، `"متوجه نشدم."` ⇒ `"Sorry, I didn't catch that."`.
 
 **محدودیت‌ها:**
 - **نباید** مدل (`gemini-3.5-flash`) یا Schemaها (`WORKOUT_SCHEMA`, `DAILY_MEAL_SCHEMA`, `SINGLE_DAY_SCHEMA`, ToolDeclarationها) تغییر کنند.
@@ -83,7 +87,9 @@
 
 **Validation:**
 - `grep -E '[\u0600-\u06FF]|fa-IR' services/geminiService.ts` ⇒ صفر match.
-- یک onboarding تستی end-to-end ⇒ خروجی JSON برنامه کاملاً انگلیسی است.
+- `grep -n 'Saturday to Friday' services/geminiService.ts` ⇒ صفر match.
+- `grep -n 'Monday to Sunday' services/geminiService.ts` ⇒ حداقل ۱ match.
+- یک onboarding تستی end-to-end ⇒ خروجی JSON برنامه کاملاً انگلیسی است و روز اول `Monday` است.
 
 `CONTEXT_FILES: ["services/geminiService.ts", "types.ts"]`
 
@@ -94,7 +100,8 @@
 
 **راهنمای پیاده‌سازی:**
 1. `getTodayIndex()`: فرمول از `(d.getDay() + 1) % 7` (Sat=0) ⇒ `(d.getDay() + 6) % 7` (Mon=0).
-2. `getTodayLog()` و `submitDailyLog()`: کلیدسازی تاریخ از `new Date().toLocaleDateString('fa-IR')` ⇒ `new Date().toISOString().slice(0, 10)` (فرمت `YYYY-MM-DD`، locale-agnostic).
+2. `getTodayLog()` و `submitDailyLog()`: کلید تاریخ از `new Date().toLocaleDateString('fa-IR')` ⇒ **`new Date().toLocaleDateString('en-CA')`** (خروجی `YYYY-MM-DD` در منطقه زمانی **محلی** کاربر).
+   - **[حیاتی — Timezone Trap]** از `new Date().toISOString().slice(0, 10)` استفاده **نشود**. `toISOString()` همیشه UTC می‌دهد؛ کاربری که ساعت ۱ بامداد به وقت محلی خود log می‌زند، در UTC هنوز روز قبل است و log به اشتباه روی روز گذشته نوشته می‌شود. `en-CA` خروجی `YYYY-MM-DD` ولی **در timezone محلی** برمی‌گرداند که هم locale-agnostic است هم از این تله مصون.
 3. کامنت‌ها/console.logهای فارسی (در صورت وجود) ⇒ انگلیسی.
 
 **محدودیت‌ها:**
@@ -104,35 +111,63 @@
 
 **Validation:**
 - `grep -E '[\u0600-\u06FF]|fa-IR' context/UserContext.tsx` ⇒ صفر match.
+- `grep -n 'toISOString' context/UserContext.tsx` ⇒ صفر match (نباید برای کلید تاریخ روزانه استفاده شود).
+- `grep -n "toLocaleDateString\\('en-CA'\\)" context/UserContext.tsx` ⇒ حداقل ۲ match (در `getTodayLog` و `submitDailyLog`).
 - Onboarding ⇒ Dashboard ⇒ نمایش روز جاری روی index صحیح Mon-first.
 
 `CONTEXT_FILES: ["context/UserContext.tsx", "types.ts", "services/geminiService.ts"]`
 
 ---
 
-## TASK 05 — Onboarding Flow English Conversion (9 steps + orchestrator)
-**هدف:** تبدیل کامل تجربه Onboarding به انگلیسی LTR، با حفظ سیستم Metric (kg, cm).
+## TASK 05A — Onboarding Shell + Steps 1–5
+**هدف:** تبدیل Orchestrator و نیمه اول Onboarding (Name → Goal → Biometrics → Measurements → Equipment) به انگلیسی LTR.
 
 **راهنمای پیاده‌سازی:**
 1. در `OnboardingFlow.tsx`: عنوان‌های مرحله، progress label، دکمه‌های Next/Back/Finish، loading stage labels (`WORKOUT`, `NUTRITION`, `FINALIZING`, `INIT`, `ADJUSTING`) ⇒ متن انگلیسی طبیعی (مثلاً `"Building your workout split..."`, `"Designing your nutrition..."`, `"Finalizing your plan..."`).
-2. هر فایل Step (`NameStep`, `GoalStep`, `BiometricsStep`, `MeasurementsStep`, `EquipmentStep`, `AvailabilityStep`, `LifestyleStep`, `NutritionStep`, `HealthStep`):
+2. هر فایل Step از این پنج‌تا (`NameStep`, `GoalStep`, `BiometricsStep`, `MeasurementsStep`, `EquipmentStep`):
    - Question copy + helper text ⇒ انگلیسی.
-   - Option labels (e.g., goalها: "Build muscle", "Lose fat", "Athletic performance", "General health"; experience: "Beginner / Intermediate / Advanced"; equipment: "Gym / Home"; dietType: "Omnivore / Vegetarian / Vegan / Keto / Paleo"; mood/jobActivity options) ⇒ انگلیسی.
+   - Option labels (e.g., goalها: "Build muscle", "Lose fat", "Athletic performance", "General health"; experience: "Beginner / Intermediate / Advanced"; equipment: "Gym / Home").
    - Form labels: `Weight (kg)`, `Height (cm)`, `Age (years)`, `Neck (cm)`, `Waist (cm)`, `Hips (cm)`, `Wrist (cm)`.
    - Validation messages ⇒ انگلیسی.
-3. `AvailabilityStep`: ترتیب نمایش روزها **Monday → Sunday**. مقادیر داخلی `WeekDay` ('Saturday'..'Friday') از قبل انگلیسی است و تغییر نمی‌کند.
-4. کلاس‌های Tailwind مختص RTL در این فولدر (`text-right`, `space-x-reverse`, `flex-row-reverse`, `mr-` که در منطق RTL "شروع" بود) — هر کدام را با چشم LTR بازبینی کن: اگر برای RTL گذاشته شده بود، حذف یا با معادل LTR (پیش‌فرض) جایگزین کن.
+3. کلاس‌های Tailwind مختص RTL در این پنج فایل + Orchestrator (`text-right`, `space-x-reverse`, `flex-row-reverse`, `mr-`/`ml-` که در منطق RTL "شروع" بود) — هر کدام را با چشم LTR بازبینی کن.
 
 **محدودیت‌ها:**
 - **نباید** ترتیب stepها یا data shape ارسالی به `completeOnboarding` تغییر کند.
 - **نباید** سیستم Imperial اضافه شود.
+- **نباید** فایل‌های step ۶ تا ۹ در این تسک لمس شوند (مال 05B).
 - **نباید** فیلد جدیدی به `UserStats` اضافه شود.
 
 **Validation:**
-- `grep -E '[\u0600-\u06FF]' features/onboarding/` ⇒ صفر.
-- اجرای Onboarding از ابتدا تا انتها در DevTools mobile view بدون شکستگی LTR.
+- `grep -E '[\u0600-\u06FF]' features/onboarding/OnboardingFlow.tsx features/onboarding/steps/NameStep.tsx features/onboarding/steps/GoalStep.tsx features/onboarding/steps/BiometricsStep.tsx features/onboarding/steps/MeasurementsStep.tsx features/onboarding/steps/EquipmentStep.tsx` ⇒ صفر.
+- اجرای Onboarding تا انتهای EquipmentStep بدون شکستگی LTR.
 
-`CONTEXT_FILES: ["features/onboarding/OnboardingFlow.tsx", "features/onboarding/steps/NameStep.tsx", "features/onboarding/steps/GoalStep.tsx", "features/onboarding/steps/BiometricsStep.tsx", "features/onboarding/steps/MeasurementsStep.tsx", "features/onboarding/steps/EquipmentStep.tsx", "features/onboarding/steps/AvailabilityStep.tsx", "features/onboarding/steps/LifestyleStep.tsx", "features/onboarding/steps/NutritionStep.tsx", "features/onboarding/steps/HealthStep.tsx", "context/UserContext.tsx", "types.ts", "components/ui/Button.tsx", "components/ui/Card.tsx"]`
+`CONTEXT_FILES: ["features/onboarding/OnboardingFlow.tsx", "features/onboarding/steps/NameStep.tsx", "features/onboarding/steps/GoalStep.tsx", "features/onboarding/steps/BiometricsStep.tsx", "features/onboarding/steps/MeasurementsStep.tsx", "features/onboarding/steps/EquipmentStep.tsx", "context/UserContext.tsx", "types.ts", "components/ui/Button.tsx", "components/ui/Card.tsx"]`
+
+---
+
+## TASK 05B — Onboarding Steps 6–9 (Availability → Lifestyle → Nutrition → Health)
+**هدف:** تبدیل نیمه دوم Onboarding با تأکید بر بازچینی روزهای هفته به Mon-first.
+
+**راهنمای پیاده‌سازی:**
+1. هر فایل Step از این چهارتا (`AvailabilityStep`, `LifestyleStep`, `NutritionStep`, `HealthStep`):
+   - Question copy + helper text + option labels + validation ⇒ انگلیسی.
+   - `dietType`: "Omnivore / Vegetarian / Vegan / Keto / Paleo".
+   - `mood` / `jobActivity`: option labels انگلیسی.
+2. **[بحرانی — Mon-first]** در `AvailabilityStep`:
+   - آرایه `DAYS` باید **بازچینی شود** تا اولین آبجکت `Monday` باشد، نه `Saturday`. ترتیب نهایی: `Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday`.
+   - مقادیر `id` (که از `WeekDay` enum در `types.ts` می‌آیند) همان رشته‌های انگلیسی فعلی هستند ⇒ تغییر نمی‌کنند، فقط ترتیب آرایه و `label`ها (`'شنبه'` ⇒ `'Saturday'` و …) عوض می‌شوند.
+3. کلاس‌های جهت‌دار LTR-اصلاح در همین چهار فایل.
+
+**محدودیت‌ها:**
+- **نباید** type `WeekDay` در `types.ts` تغییر کند.
+- **نباید** فایل‌های step ۱ تا ۵ لمس شوند.
+- **نباید** Orchestrator (`OnboardingFlow.tsx`) لمس شود (آن در 05A انجام شد).
+
+**Validation:**
+- `grep -E '[\u0600-\u06FF]' features/onboarding/steps/AvailabilityStep.tsx features/onboarding/steps/LifestyleStep.tsx features/onboarding/steps/NutritionStep.tsx features/onboarding/steps/HealthStep.tsx` ⇒ صفر.
+- در رندر `AvailabilityStep`، اولین چیپ روز `Monday` باشد و آخرین `Sunday`.
+
+`CONTEXT_FILES: ["features/onboarding/steps/AvailabilityStep.tsx", "features/onboarding/steps/LifestyleStep.tsx", "features/onboarding/steps/NutritionStep.tsx", "features/onboarding/steps/HealthStep.tsx", "types.ts", "components/ui/Button.tsx", "components/ui/Card.tsx"]`
 
 ---
 
@@ -213,28 +248,49 @@
 
 ---
 
-## TASK 09 — AI Coach (Chat) English/LTR
-**هدف:** تبدیل تجربه چت Agentic.
+## TASK 09A — AI Coach: Chat UI Shell (English/LTR)
+**هدف:** تبدیل لایه ارائه چت (Header, Input, Empty state, Bubble, List) به انگلیسی LTR.
 
 **راهنمای پیاده‌سازی:**
-1. `AiCoach.tsx`: header title "Coach", subtitle، حالت‌های loading/error انگلیسی.
-2. `useAiCoachLogic.ts`: error toasts، system messages، success copy از tool calls (e.g., "Plan updated", "Meal replaced") انگلیسی.
-3. `components/chat/ChatHeader.tsx`: عنوان، avatar tooltip.
-4. `components/chat/ChatInput.tsx`: placeholder `"Ask your coach anything..."`، send button aria-label.
-5. `components/chat/ChatEmptyState.tsx`: copy ابتدایی انگلیسی + suggested prompts (e.g., "Make today lighter — I slept 5 hours", "Replace my lunch with something high-protein").
-6. `components/chat/MessageBubble.tsx`: timestamp formatter `'fa-IR'` ⇒ `'en-US'`؛ کلاس‌های alignment: bubble کاربر در LTR باید سمت **راست** (`self-end`) و coach سمت **چپ** (`self-start`) باشد — چک شود (در RTL برعکس بود).
-7. `components/chat/MessageList.tsx`: scroll behavior، separator labels.
-8. `utils/chatHelpers.ts`: هر template/string فارسی ⇒ انگلیسی.
+1. `AiCoach.tsx`: header title "Coach"، subtitle، حالت‌های loading/error انگلیسی.
+2. `components/chat/ChatHeader.tsx`: عنوان، avatar tooltip.
+3. `components/chat/ChatInput.tsx`: placeholder `"Ask your coach anything..."`، send button aria-label.
+4. `components/chat/ChatEmptyState.tsx`: copy ابتدایی انگلیسی + suggested prompts (e.g., "Make today lighter — I slept 5 hours", "Replace my lunch with something high-protein").
+5. `components/chat/MessageBubble.tsx`:
+   - timestamp formatter `'fa-IR'` ⇒ `'en-US'`.
+   - **[نکته مهم — کلاس‌ها را عوض نکن]** منطق فعلی `isUser ? "flex-row-reverse" : "flex-row"` در حالت LTR **به‌طور طبیعی و درست** کاربر را سمت راست و coach را سمت چپ قرار می‌دهد (در RTL برعکس می‌شد، که قصد قبلی هم همین بود). پس کلاس‌های alignment **نباید تغییر کنند**؛ فقط در حین تست بصری مطمئن شو که آیکون‌ها، gap و avatar spacingها در LTR ظاهر تمیزی دارند و در صورت لزوم فقط فاصله‌های جهت‌دار (`mr-`/`ml-`) را تنظیم کن.
+6. `components/chat/MessageList.tsx`: scroll behavior، separator labels.
 
 **محدودیت‌ها:**
 - **نباید** قرارداد Tool Calling یا shape `Message` تغییر کند.
 - **نباید** vision/attachment logic تغییر کند.
+- **نباید** `useAiCoachLogic.ts`, `utils/chatHelpers.ts`, `hooks/useChatScroll.ts` در این تسک لمس شوند (مال 09B).
 
 **Validation:**
-- `grep -E '[\u0600-\u06FF]|fa-IR' features/coach/ components/chat/ utils/chatHelpers.ts hooks/useChatScroll.ts` ⇒ صفر.
-- یک پیام تستی ارسال شود ⇒ پاسخ کاملاً انگلیسی، bubble alignment صحیح.
+- `grep -E '[\u0600-\u06FF]|fa-IR' features/coach/AiCoach.tsx components/chat/` ⇒ صفر.
+- یک پیام تستی ⇒ bubble کاربر سمت راست، coach سمت چپ، timestamp انگلیسی.
 
-`CONTEXT_FILES: ["features/coach/AiCoach.tsx", "features/coach/useAiCoachLogic.ts", "components/chat/ChatHeader.tsx", "components/chat/ChatInput.tsx", "components/chat/ChatEmptyState.tsx", "components/chat/MessageBubble.tsx", "components/chat/MessageList.tsx", "utils/chatHelpers.ts", "hooks/useChatScroll.ts", "context/UserContext.tsx", "services/geminiService.ts", "types.ts"]`
+`CONTEXT_FILES: ["features/coach/AiCoach.tsx", "components/chat/ChatHeader.tsx", "components/chat/ChatInput.tsx", "components/chat/ChatEmptyState.tsx", "components/chat/MessageBubble.tsx", "components/chat/MessageList.tsx", "types.ts"]`
+
+---
+
+## TASK 09B — AI Coach: Logic & Helpers (English copy)
+**هدف:** تبدیل error/success copy و templateهای داخلی منطق چت.
+
+**راهنمای پیاده‌سازی:**
+1. `useAiCoachLogic.ts`: error toasts، system messages، success copy از tool calls (e.g., "Plan updated", "Meal replaced") انگلیسی.
+2. `utils/chatHelpers.ts`: هر template/string فارسی ⇒ انگلیسی.
+3. `hooks/useChatScroll.ts`: بازبینی شود؛ معمولاً خنثی است و نیاز به تغییر ندارد، اما اگر کامنت/log فارسی دارد، انگلیسی شود.
+
+**محدودیت‌ها:**
+- **نباید** signature و export های هیچ هوک/helper تغییر کند.
+- **نباید** فایل‌های UI لایه ارائه (TASK 09A) لمس شوند.
+
+**Validation:**
+- `grep -E '[\u0600-\u06FF]|fa-IR' features/coach/useAiCoachLogic.ts utils/chatHelpers.ts hooks/useChatScroll.ts` ⇒ صفر.
+- یک پیام تستی end-to-end ⇒ پاسخ کاملاً انگلیسی، toastها انگلیسی، tool call success message انگلیسی.
+
+`CONTEXT_FILES: ["features/coach/useAiCoachLogic.ts", "utils/chatHelpers.ts", "hooks/useChatScroll.ts", "context/UserContext.tsx", "services/geminiService.ts", "types.ts"]`
 
 ---
 
